@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ChangeType {
+  RENUMBERED_ONLY
+  MODIFIED
+  NEWLY_ADDED
+  REMOVED
+}
+
+enum CodeType {
+  IPC
+  BNS
+}
+
+model Section {
+  id            String   @id @default(cuid())
+  codeType      CodeType
+  sectionNumber String
+  title         String
+  bodyText      String   @db.Text
+  chapter       String?
+  createdAt     DateTime @default(now())
+
+  oldMappings   Mapping[] @relation("OldSection")
+  newMappings   Mapping[] @relation("NewSection")
+
+  @@unique([codeType, sectionNumber])
+  @@index([sectionNumber])
+}
+
+model Mapping {
+  id           String     @id @default(cuid())
+  oldSectionId String?
+  newSectionId String?
+  changeType   ChangeType
+  summary      String?    @db.Text
+
+  oldSection   Section?   @relation("OldSection", fields: [oldSectionId], references: [id])
+  newSection   Section?   @relation("NewSection", fields: [newSectionId], references: [id])
+
+  createdAt    DateTime   @default(now())
+
+  @@index([oldSectionId])
+  @@index([newSectionId])
+}
